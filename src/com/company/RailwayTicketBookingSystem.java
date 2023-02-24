@@ -139,8 +139,6 @@ class Admin {
             }
         }
     }
-
-
 }
 
 class Passenger {
@@ -430,8 +428,5 @@ public class RailwayTicketBookingSystem {
                 break;
             }
         }
-
-
     }
-
 }
