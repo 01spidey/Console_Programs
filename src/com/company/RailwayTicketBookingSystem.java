@@ -1,14 +1,17 @@
 package com.company;
 
-
 import java.util.*;
 
 class Train {
     String name, source, destination;
     int seatsAvailable = 1;
-    ArrayList<String> stations = new ArrayList<String>();
+//    ArrayList<String> stations = new ArrayList<String>();
+
+    HashMap<String, Integer> station_map = new LinkedHashMap<String,Integer>();
+
     HashMap<String, Passenger> passenger_map = new HashMap<String, Passenger>();
     ArrayList<Passenger> waiting_lst = new ArrayList<Passenger>();
+    HashMap<String, Integer> seats_booked = new HashMap<String, Integer>();
 
     Train(String name, String source, String destination) {
         this.source = source;
@@ -17,7 +20,9 @@ class Train {
     }
 
     void addStops(String stops) {
-        stations.addAll(Arrays.asList(stops.split(" ")));
+//        String[] arr = stops.split(" ");
+        int i=0;
+        for(String str : stops.split(" ")) station_map.put(str,0);
     }
 
     void displayDetails() {
@@ -27,6 +32,7 @@ class Train {
         System.out.printf("%-20s%s\n", "Destination:", destination);
         System.out.printf("%-20s%d\n", "Available Seats:", seatsAvailable);
         System.out.println("Stations:");
+        List<String> stations = new ArrayList<String>(station_map.keySet());
         for (String station : stations) System.out.printf("\t-%s\n", station);
     }
 
@@ -37,12 +43,17 @@ class Train {
         String passSource = scn.next();
         System.out.print("Enter the Destination Location : ");
         String passDest = scn.next();
-
+        List<String> stations = new ArrayList<String>(station_map.keySet());
         if ((!stations.contains(passSource)) || (!stations.contains(passDest)))  System.out.println("\nERROR : Invalid Source or Destination !!");
 
         else{
             if (passSource.equals(passDest)) System.out.println("\nERROR : Source and Destination cannot be the Same !!");
             else {
+//                boolean start = false;
+//                for (Map.Entry<String, Integer> set : station_map.entrySet()) {
+//                    if((set.getKey()).equals(passSource)) start = true;
+//                }
+
                 if (seatsAvailable == 0) {
                     System.out.println("\nERROR : No Seats Available!! Putting you in Waiting List !!");
                     waiting_lst.add(passenger);
@@ -53,6 +64,7 @@ class Train {
                     seatsAvailable--;
                     passenger.addTicket(ticket,true);
                 }
+
             }
         }
     }
@@ -65,6 +77,7 @@ class Train {
         seatsAvailable++;
         if(waiting_lst.size()>0) {
             Passenger waitingPassenger = waiting_lst.remove(0);
+            passenger_map.put(waitingPassenger.id, waitingPassenger);
             Ticket ticket = new Ticket(waitingPassenger, this, waitingPassenger.source, waitingPassenger.destination);
             waitingPassenger.addTicket(ticket,false);
             System.out.printf("\n---------- Ticket Confirmed for -  [%s]----------\n",waitingPassenger.name);
@@ -127,7 +140,7 @@ class Admin {
         ArrayList<Passenger> waiting_lst = train.waiting_lst;
         if (waiting_lst.size() == 0) System.out.printf("%20s", "No Passengers !!\n");
         else {
-            for (int i = 0; i < waiting_lst.size(); i++) System.out.println((i + 1) + ". " + waiting_lst.get(i));
+            for (int i = 0; i < waiting_lst.size(); i++) System.out.println((i + 1) + ". " + (waiting_lst.get(i).id));
             System.out.println((waiting_lst.size() + 1) + ". Back");
             System.out.print("\nSelect a Passenger : ");
             int num = scn.nextInt();
@@ -269,7 +282,6 @@ public class RailwayTicketBookingSystem {
         } else System.out.println("\nERROR : Invalid Credentials!!");
     }
 
-
     static String askFirst() {
         System.out.println("\n----- Railway Booking System -----\n    1. Admin\n    2. Passenger\n    3. EXIT");
         System.out.print("\nLogin as : ");
@@ -308,8 +320,6 @@ public class RailwayTicketBookingSystem {
 
         return "null";
     }
-
-
 
     static void viewTrains(String user) {
         System.out.println("\n---------- TRAINS ----------");
@@ -359,7 +369,6 @@ public class RailwayTicketBookingSystem {
     }
 
     public static void main(String[] args) {
-        System.out.println("Vanakkam Bruh!!");
         String cur_login;
         boolean flag;
 
