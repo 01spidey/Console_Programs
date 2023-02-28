@@ -4,12 +4,12 @@ import java.util.*;
 
 class Train {
     String name, source, destination;
-    int seatsAvailable = 1;
+    int seatsAvailable = 3;
 
     HashMap<String, Integer> station_map = new LinkedHashMap<String,Integer>();
 
     HashMap<String, Passenger> passenger_map = new HashMap<String, Passenger>();
-    ArrayList<Passenger> waiting_lst = new ArrayList<Passenger>();
+    Queue<Passenger> waiting_queue = new ArrayDeque<Passenger>();
 
     Train(String name, String source, String destination) {
         this.source = source;
@@ -19,7 +19,7 @@ class Train {
 
     void addStops(String stops) {
         int i=0;
-        for(String str : stops.split(" ")) station_map.put(str,0);
+        for(String str : stops.split(" ")) station_map.put(str,seatsAvailable);
     }
 
     void displayDetails() {
@@ -27,10 +27,13 @@ class Train {
         System.out.printf("%-20s%s\n", "Name:", name);
         System.out.printf("%-20s%s\n", "Source:", source);
         System.out.printf("%-20s%s\n", "Destination:", destination);
-        System.out.printf("%-20s%d\n", "Available Seats:", seatsAvailable);
-        System.out.println("Stations:");
+        System.out.printf("%-20s%d\n\n", "Available Seats:", seatsAvailable);
+        System.out.printf("%-30s%s\n", "Stations", "Seats");
+        System.out.printf("%-30s%s\n", "----------", "---------");
         List<String> stations = new ArrayList<String>(station_map.keySet());
-        for (String station : stations) System.out.printf("\t-%s\n", station);
+        for (String station : stations) {
+            System.out.printf("%-30s%d\n", station, station_map.get(station));
+        }
     }
 
     void bookTicket(Passenger passenger) {
@@ -46,32 +49,109 @@ class Train {
         else{
             if (passSource.equals(passDest)) System.out.println("\nERROR : Source and Destination cannot be the Same !!");
             else {
-                if (seatsAvailable == 0) {
-                    System.out.println("\nERROR : No Seats Available!! Putting you in Waiting List !!");
-                    waiting_lst.add(passenger);
-                    passenger.isWaiting(passSource, passDest);
-                } else {
+                boolean start = false;
+                boolean canAccomodate = true;
+
+                for (Map.Entry<String, Integer> set : station_map.entrySet()) {
+                    if(!start && (set.getKey()).equals(passSource)) start = true;
+                    if(start){
+                        if(set.getValue()<=0) canAccomodate = false;
+                        if(set.getKey().equals(passDest)) break;
+                    }
+                }
+
+                if(canAccomodate){
+                    String key = "";
+                    int value = 0;
+                    start = false;
+                    for (Map.Entry<String, Integer> set : station_map.entrySet()) {
+                        key = set.getKey(); value = set.getValue();
+
+                        if(!start && key.equals(passSource)) start = true;
+
+                        if(key.equals(passDest)) break;
+
+                        if(start) station_map.put(key,value>0?value-1:0);
+                    }
                     passenger_map.put(passenger.id, passenger);
                     Ticket ticket = new Ticket(passenger, this, passSource, passDest);
                     seatsAvailable--;
                     passenger.addTicket(ticket,true);
                 }
+                else{
+                    System.out.println("You cannot be Accommodated !! Putting you in Waiting List !!");
+                    waiting_queue.add(passenger);
+                    passenger.isWaiting(passSource, passDest);
+                }
             }
         }
     }
 
-    void cancelTicket(Passenger passenger, String ticketID) {
+    void bookTicket(Passenger passenger, String passSource, String passDest){
+        boolean start = false;
+        boolean canAccomodate = true;
+
+        for (Map.Entry<String, Integer> set : station_map.entrySet()) {
+            if(!start && (set.getKey()).equals(passSource)) start = true;
+            if(start){
+                if(set.getValue()<=0) canAccomodate = false;
+                if(set.getKey().equals(passDest)) break;
+            }
+        }
+
+        if(canAccomodate){
+            String key = "";
+            int value = 0;
+            start = false;
+
+            for (Map.Entry<String, Integer> set : station_map.entrySet()) {
+                key = set.getKey(); value = set.getValue();
+                if(!start && key.equals(passSource)) start = true;
+                if(key.equals(passDest)) break;
+                if(start) station_map.put(key,value>0?value-1:0);
+            }
+
+            passenger_map.put(passenger.id, passenger);
+            Ticket new_ticket = new Ticket(passenger, this, passenger.source, passenger.destination);
+            bookTicket(passenger, passSource, passDest);
+            System.out.printf("\n---------- Ticket Confirmed for -  [%s]----------\n",passenger.name);
+
+            passenger_map.put(passenger.id, passenger);
+            seatsAvailable--;
+            passenger.addTicket(new_ticket,false);
+        }
+    }
+
+    void cancelTicket(Passenger passenger, Ticket ticket) {
         System.out.println("Ticket Cancelled for "+passenger.name);
-        passenger.ticket_map.remove(ticketID);
+        passenger.ticket_map.remove(ticket.id);
         passenger_map.remove(passenger.id);
-        passenger.cancelTicket(ticketID);
+        passenger.cancelTicket(ticket.id);
         seatsAvailable++;
-        if(waiting_lst.size()>0) {
-            Passenger waitingPassenger = waiting_lst.remove(0);
-            passenger_map.put(waitingPassenger.id, waitingPassenger);
-            Ticket ticket = new Ticket(waitingPassenger, this, waitingPassenger.source, waitingPassenger.destination);
-            waitingPassenger.addTicket(ticket,false);
-            System.out.printf("\n---------- Ticket Confirmed for -  [%s]----------\n",waitingPassenger.name);
+        System.out.println("\nTicket Cancelled Successfully !!");
+
+        String key;
+        int value = 0;
+        boolean start = false;
+
+        String passSource = ticket.source;
+        String passDest = ticket.destination;
+        System.out.println(station_map);
+
+        for (Map.Entry<String, Integer> set : station_map.entrySet()) {
+            key = set.getKey(); value = set.getValue();
+            if(!start && key.equals(passSource)) start = true;
+            if(key.equals(passDest)) break;
+            if(start) station_map.put(key,value+1);
+        }
+
+        System.out.println(station_map);
+
+        if(waiting_queue.size()>0) {
+            Passenger waitingPassenger = waiting_queue.poll();
+            passSource = waitingPassenger.source;
+            passDest = waitingPassenger.destination;
+            bookTicket(waitingPassenger,passSource,passDest);
         }
     }
 
@@ -85,7 +165,7 @@ class Ticket {
     double fare;
 
     Ticket(Passenger passenger, Train train, String source, String destination) {
-        id = (passenger.name.toLowerCase()) + "0000" + train.name;
+        id = (passenger.name.toLowerCase())+"-00-"+train.name +"-00-"+source+"-"+destination;
         this.passenger = passenger;
         this.train = train;
         this.source = source;
@@ -128,7 +208,7 @@ class Admin {
 
     void viewWaitingList(Train train) {
         System.out.println("\n---------- WAITING LIST ----------");
-        ArrayList<Passenger> waiting_lst = train.waiting_lst;
+        ArrayList<Passenger> waiting_lst = new ArrayList<Passenger>(train.waiting_queue);
         if (waiting_lst.size() == 0) System.out.printf("%20s", "No Passengers !!\n");
         else {
             for (int i = 0; i < waiting_lst.size(); i++) System.out.println((i + 1) + ". " + (waiting_lst.get(i).id));
@@ -160,6 +240,7 @@ class Passenger {
     }
 
     void addTicket(Ticket ticket, boolean flag) {
+        System.out.println("\n"+ticket.id);
         if(ticket_map.containsKey(ticket.id)) System.out.println("\nERROR : Ticket Already Booked!!");
         else{
             ticket_map.put(ticket.id, ticket);
@@ -202,7 +283,7 @@ class Passenger {
                 ticket.displayDetails();
                 System.out.println("\n1. Cancel Ticket\n2. Back\nChoose an Option : ");
                 int op = scn.nextInt();
-                if(op==1) ticket.train.cancelTicket(ticket.passenger,ticket.id);
+                if(op==1) ticket.train.cancelTicket(ticket.passenger,ticket);
                 viewTickets();
             }
         }
@@ -327,7 +408,7 @@ public class RailwayTicketBookingSystem {
                 if (user.equals("admin")) {
                     Admin admin = new Admin();
                     System.out.println("\n1. View Passengers\n2. View Waiting List\n3. Back");
-                    System.out.println("Choose an Option : ");
+                    System.out.print("\nChoose an Option : ");
                     int op = scn.nextInt();
                     switch (op) {
                         case 1:
@@ -343,7 +424,7 @@ public class RailwayTicketBookingSystem {
                 } else {
                     Passenger passenger = passenger_map.get(user);
                     System.out.println("\n1. Book Ticket\n2. Back\n");
-                    System.out.print("Choose an Option : ");
+                    System.out.print("\nChoose an Option : ");
                     int op = scn.nextInt();
                     switch (op) {
                         case 1:
@@ -364,7 +445,7 @@ public class RailwayTicketBookingSystem {
         boolean flag;
 
         while (true) {
-            try {
+//            try {
                 cur_login = askFirst();
 
                 if (cur_login.equals("admin")) {
@@ -422,10 +503,10 @@ public class RailwayTicketBookingSystem {
                         }
                     }
                 }
-            } catch (Exception e) {
-                System.out.println("ERROR : Invalid Input!!");
-                break;
-            }
+//            } catch (Exception e) {
+//                System.out.println("ERROR : Invalid Input!!");
+//                break;
+//            }
         }
     }
 }
