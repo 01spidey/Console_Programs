@@ -5,13 +5,11 @@ import java.util.*;
 class Train {
     String name, source, destination;
     int seatsAvailable = 1;
-//    ArrayList<String> stations = new ArrayList<String>();
 
     HashMap<String, Integer> station_map = new LinkedHashMap<String,Integer>();
 
     HashMap<String, Passenger> passenger_map = new HashMap<String, Passenger>();
     ArrayList<Passenger> waiting_lst = new ArrayList<Passenger>();
-    HashMap<String, Integer> seats_booked = new HashMap<String, Integer>();
 
     Train(String name, String source, String destination) {
         this.source = source;
@@ -20,7 +18,6 @@ class Train {
     }
 
     void addStops(String stops) {
-//        String[] arr = stops.split(" ");
         int i=0;
         for(String str : stops.split(" ")) station_map.put(str,0);
     }
@@ -49,11 +46,6 @@ class Train {
         else{
             if (passSource.equals(passDest)) System.out.println("\nERROR : Source and Destination cannot be the Same !!");
             else {
-//                boolean start = false;
-//                for (Map.Entry<String, Integer> set : station_map.entrySet()) {
-//                    if((set.getKey()).equals(passSource)) start = true;
-//                }
-
                 if (seatsAvailable == 0) {
                     System.out.println("\nERROR : No Seats Available!! Putting you in Waiting List !!");
                     waiting_lst.add(passenger);
@@ -64,7 +56,6 @@ class Train {
                     seatsAvailable--;
                     passenger.addTicket(ticket,true);
                 }
-
             }
         }
     }
