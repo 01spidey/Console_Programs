@@ -4,12 +4,12 @@ import java.util.*;
 
 class Train {
     String name, source, destination;
-    int seatsAvailable = 3;
+    int seatsAvailable = 1;
 
     HashMap<String, Integer> station_map = new LinkedHashMap<String,Integer>();
-
     HashMap<String, Passenger> passenger_map = new HashMap<String, Passenger>();
-    Queue<Passenger> waiting_queue = new ArrayDeque<Passenger>();
+    List<String> stations;
+    List<Passenger> waiting_lst = new ArrayList<Passenger>();
 
     Train(String name, String source, String destination) {
         this.source = source;
@@ -20,6 +20,7 @@ class Train {
     void addStops(String stops) {
         int i=0;
         for(String str : stops.split(" ")) station_map.put(str,seatsAvailable);
+        stations = new ArrayList<String>(station_map.keySet());
     }
 
     void displayDetails() {
@@ -80,7 +81,7 @@ class Train {
                 }
                 else{
                     System.out.println("You cannot be Accommodated !! Putting you in Waiting List !!");
-                    waiting_queue.add(passenger);
+                    waiting_lst.add(passenger);
                     passenger.isWaiting(passSource, passDest);
                 }
             }
@@ -147,11 +148,22 @@ class Train {
 
         System.out.println(station_map);
 
-        if(waiting_queue.size()>0) {
-            Passenger waitingPassenger = waiting_queue.poll();
-            passSource = waitingPassenger.source;
-            passDest = waitingPassenger.destination;
-            bookTicket(waitingPassenger,passSource,passDest);
+        int ticket_source_ind = ticket.train.stations.indexOf(ticket.source);
+        int ticket_dest_ind = ticket.train.stations.indexOf(ticket.destination);
+        int pass_source_ind, pass_dest_ind;
+
+        if(waiting_lst.size()>0) {
+            for(Passenger pass:waiting_lst){
+                pass_source_ind = ticket.train.stations.indexOf(pass.source);
+                pass_dest_ind = ticket.train.stations.indexOf(pass.destination);
+                if(pass_source_ind>=ticket_source_ind && pass_dest_ind<=ticket_dest_ind){
+                    passSource = pass.source;
+                    passDest = pass.destination;
+                    waiting_lst.remove(pass);
+                    bookTicket(pass,passSource,passDest);
+                    break;
+                }
+            }
         }
     }
 
@@ -208,7 +220,7 @@ class Admin {
 
     void viewWaitingList(Train train) {
         System.out.println("\n---------- WAITING LIST ----------");
-        ArrayList<Passenger> waiting_lst = new ArrayList<Passenger>(train.waiting_queue);
+        List<Passenger> waiting_lst = train.waiting_lst;
         if (waiting_lst.size() == 0) System.out.printf("%20s", "No Passengers !!\n");
         else {
             for (int i = 0; i < waiting_lst.size(); i++) System.out.println((i + 1) + ". " + (waiting_lst.get(i).id));
@@ -261,7 +273,7 @@ class Passenger {
         System.out.printf("%-20s%s\n", "Name:", name);
         System.out.printf("%-20s%s\n", "Age:", age);
         System.out.printf("%-20s%s\n", "Gender:", gender);
-        System.out.printf("%-20s%s\n", "Contact:", contact);
+       System.out.printf("%-20s%s\n", "Contact:", contact);
     }
 
     void isWaiting(String source, String destination){
@@ -371,7 +383,8 @@ public class RailwayTicketBookingSystem {
                 return "null";
             }
             return "admin";
-        } else if (op == 2) {
+        }
+        else if (op == 2) {
             System.out.println("\n----- PASSENGER Portal -----\n1. Sign In\n2. Sign Up\n3. Back");
             System.out.print("\nChoose an Option : ");
             int ch = scn.nextInt();
